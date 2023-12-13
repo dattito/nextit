@@ -1,3 +1,10 @@
+import Demo from "@/components/demo";
+
 export default function Home() {
-  return <p>Halloo</p>;
+  return (
+    <div>
+      <p>Halloo</p>
+      <Demo />
+    </div>
+  );
 }
