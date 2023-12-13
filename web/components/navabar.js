@@ -7,11 +7,9 @@ export default function Navbar() {
         <a class="navbar-brand">
           <Image src="/Logo_wide.png" width={100} height={100} />
         </a>
-        <form class="d-flex" role="search">
-          <button class="btn btn-outline-success" type="submit">
-            Log in
-          </button>
-        </form>
+        <div class="d-flex">
+          <button class="btn btn-primary">Log in</button>
+        </div>
       </div>
     </nav>
   );
