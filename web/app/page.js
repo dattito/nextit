@@ -1,10 +1,5 @@
-import Demo from "@/components/demo";
+import Navbar from "@/components/navabar";
 
 export default function Home() {
-  return (
-    <div>
-      <p>Halloo</p>
-      <Demo />
-    </div>
-  );
+  return <Navbar />;
 }
