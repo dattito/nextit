@@ -1,0 +1,29 @@
+start:
+  docker run --rm -p 5432:5432 -d --name postgres-nextit-item-microservice -v ./volume:/var/lib/postgresql/data -e POSTGRES_PASSWORD=postgres postgis || true
+
+stop:
+  docker stop postgres-nextit-item-microservice || true
+
+rm: stop
+  rm -rf ./volume
+
+migrate:
+  DATABASE_URL="postgres://postgres:postgres@localhost:5432/postgres" sqlx migrate run
+
+cargo-run:
+  DATABASE_URL="postgres://postgres:postgres@localhost:5432/postgres" cargo run --release
+
+new: rm
+  sleep 1
+  @just start
+  sleep 5
+  @just migrate
+
+sh: start
+  docker exec -it postgres-nextit-item-microservice psql -U postgres
+
+query QUERY:
+  @docker exec -it postgres-nextit-item-microservice psql -U postgres -c "{{QUERY}}"
+
+build:
+  docker build -t nextit-item-microservice .
