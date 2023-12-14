@@ -11,9 +11,11 @@
     "remove-test-db": "docker stop nextit-web-postgres"
   },
   "dependencies": {
+    "@auth/prisma-adapter": "^1.0.11",
     "@prisma/client": "^5.7.0",
     "bootstrap": "^5.3.2",
     "next": "14.0.4",
+    "next-auth": "^4.24.5",
     "react": "^18",
     "react-dom": "^18",
     "sharp": "^0.33.0"

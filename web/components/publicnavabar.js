@@ -1,14 +1,15 @@
 import Image from "next/image";
+import LoginButton from "./login-button";
 
 export default function PublicNavbar() {
   return (
-    <nav class="navbar bg-body-tertiary">
-      <div class="container-fluid">
-        <a class="navbar-brand">
-          <Image src="/Logo_wide.png" width={100} height={100} />
+    <nav className="navbar bg-body-tertiary">
+      <div className="container-fluid">
+        <a className="navbar-brand">
+          <Image src="/Logo_wide.png" width={100} height={100} alt="Logo" />
         </a>
-        <div class="d-flex">
-          <button class="btn btn-primary">Log in</button>
+        <div className="d-flex">
+          <LoginButton />
         </div>
       </div>
     </nav>
