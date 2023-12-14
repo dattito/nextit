@@ -1,0 +1,7 @@
+new: delete apply
+
+destroy:
+  terraform destroy
+
+apply:
+  terraform apply --auto-approve

@@ -8,7 +8,7 @@ const handler = NextAuth({
   providers: [
     AuthentikProvider({
       name: "nextit-Auth",
-      clientId: "nextid-clientid",
+      clientId: "nextit-clientid",
       clientSecret: "nextit-clientsecret",
       issuer: "http://localhost:9000/application/o/nextit",
     }),
