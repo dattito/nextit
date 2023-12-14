@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-export default function Navbar() {
+export default function PublicNavbar() {
   return (
     <nav class="navbar bg-body-tertiary">
       <div class="container-fluid">
