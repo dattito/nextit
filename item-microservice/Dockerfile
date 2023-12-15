@@ -2,6 +2,7 @@
 ##### Builder
 ################
 FROM ghcr.io/dattito/rust-alpine-mimalloc:1.73 as builder
+RUN apk add protoc protobuf-dev
 
 WORKDIR /app
 
@@ -16,7 +17,7 @@ FROM scratch AS runtime
 
 COPY --from=builder /app/target/*-unknown-linux-musl/release/item-microservice /
 
-EXPOSE 3000
+EXPOSE 50051
 
 ENTRYPOINT ["/item-microservice"]
 

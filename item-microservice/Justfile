@@ -1,5 +1,5 @@
 start:
-  docker run --rm -p 5432:5432 -d --name postgres-nextit-item-microservice -v ./volume:/var/lib/postgresql/data -e POSTGRES_PASSWORD=postgres postgis || true
+  docker run --rm -p 5432:5432 -d --name postgres-nextit-item-microservice -v ./volume:/var/lib/postgresql/data -e POSTGRES_PASSWORD=postgres -h postgres-nextit-item-microservice postgres:16-alpine || true
 
 stop:
   docker stop postgres-nextit-item-microservice || true

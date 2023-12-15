@@ -11,7 +11,7 @@ tonic = "0.10.2"
 prost = "0.12.3"
 tokio = {version="1.34.0", features=["rt-multi-thread", "macros"]}
 tonic-reflection = "0.10.2"
-sqlx = { version = "0.7.3", features = ["postgres", "uuid", "runtime-tokio"] }
+sqlx = { version = "0.7.3", features = ["postgres", "uuid", "runtime-tokio", "tls-none"] }
 uuid = { version = "1.6.1", features = ["v4", "serde"] }
 serde = {version="1.0.193", features = ["derive"]}
 thiserror = "1.0.50"
