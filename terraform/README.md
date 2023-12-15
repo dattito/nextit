@@ -8,6 +8,14 @@ Make sure that Terraform and Kind are installed:
 brew install terraform kind
 ```
 
+In the `nextit/terraform` directory, execute
+
+```
+terraform init
+```
+
+to install the required terraform dependencies
+
 ## Start the Development Setup
 
 The setup can be started with
