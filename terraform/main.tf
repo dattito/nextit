@@ -93,7 +93,20 @@ resource "helm_release" "cert_manager" {
   }
 }
 
+resource "kubernetes_config_map" "authentik_assets" {
+  metadata {
+    name = "authentik-assets"
+  }
+
+  binary_data = {
+    "logo.png"       = "${filebase64("assets/logo.png")}"
+    "favicon.ico"    = "${filebase64("assets/favicon.ico")}"
+    "background.jpg" = "${filebase64("assets/background.jpg")}"
+  }
+}
+
 resource "helm_release" "authentik" {
+  depends_on = [kubernetes_config_map.authentik_assets]
   name       = "authentik"
   repository = "https://charts.goauthentik.io"
   chart      = "authentik"
