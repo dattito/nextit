@@ -62,7 +62,7 @@ resource "kind_cluster" "docker" {
       }
       extra_port_mappings {
         container_port = 30051
-        host_port      = 9001
+        host_port      = 50051
         listen_address = "127.0.0.1"
       }
     }
