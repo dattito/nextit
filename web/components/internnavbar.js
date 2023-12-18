@@ -1,4 +1,5 @@
 import Image from "next/image";
+import LogoutButton from "./logout-button";
 
 export default function InternNavbar() {
   return (
@@ -8,7 +9,7 @@ export default function InternNavbar() {
           <Image src="/Logo_wide.png" width={100} height={100} />
         </a>
         <div class="d-flex">
-          <button class="btn btn-primary">Log out</button>
+          <LogoutButton />
         </div>
       </div>
     </nav>
