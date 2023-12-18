@@ -16,6 +16,10 @@ terraform {
       source  = "goauthentik/authentik"
       version = "2023.10.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "3.6.0"
+    }
   }
 }
 
@@ -24,9 +28,9 @@ variable "authentik_bootstrap_password" {
   sensitive = true
 }
 
-variable "authentik_bootstrap_token" {
-  type      = string
-  sensitive = true
+resource "random_password" "authentik_bootstrap_token" {
+  length  = 48
+  special = true
 }
 
 variable "authentik_nextit_clientid" {
@@ -56,6 +60,11 @@ resource "kind_cluster" "docker" {
         host_port      = 9000
         listen_address = "127.0.0.1"
       }
+      extra_port_mappings {
+        container_port = 30051
+        host_port      = 9001
+        listen_address = "127.0.0.1"
+      }
     }
   }
 }
@@ -78,7 +87,7 @@ provider "helm" {
 
 provider "authentik" {
   url   = var.authentik_endpoint
-  token = var.authentik_bootstrap_token
+  token = random_password.authentik_bootstrap_token.result
 }
 
 resource "helm_release" "cert_manager" {
@@ -111,7 +120,7 @@ resource "helm_release" "authentik" {
 
   set {
     name  = "env.AUTHENTIK_BOOTSTRAP_TOKEN"
-    value = var.authentik_bootstrap_token
+    value = random_password.authentik_bootstrap_token.result
   }
 }
 
@@ -151,4 +160,106 @@ resource "authentik_application" "nextjs-web" {
   name              = "Next-IT Dashboard"
   slug              = "nextit"
   protocol_provider = authentik_provider_oauth2.nextjs_web.id
+}
+
+# ----------------------------------------
+# ITEM MICROSERVICE
+# ----------------------------------------
+
+resource "random_password" "item_microservice_postgres" {
+  length  = 32
+  special = false
+}
+
+resource "kubernetes_secret" "item_microservice_postgres" {
+  metadata {
+    name = "item-microservice-postgres"
+  }
+
+  data = {
+    password            = random_password.item_microservice_postgres.result
+    "postgres-password" = random_password.item_microservice_postgres.result
+  }
+
+  type = "kubernetes.io/basic-auth"
+}
+
+resource "helm_release" "item_microservice_postgres" {
+  name       = "item-microservice-postgres"
+  repository = "https://charts.bitnami.com/bitnami"
+  chart      = "postgresql"
+  namespace  = "default"
+  version    = "13.2.24"
+
+  set {
+    name  = "auth.username"
+    value = "item"
+  }
+
+  set {
+    name  = "auth.existingSecret"
+    value = kubernetes_secret.item_microservice_postgres.metadata[0].name
+  }
+
+  set {
+    name  = "auth.database"
+    value = "item"
+  }
+}
+
+resource "kubernetes_deployment" "item_microservice" {
+  depends_on = [helm_release.item_microservice_postgres]
+  metadata {
+    name = "item-microservice"
+  }
+
+  spec {
+    replicas = 1
+    selector {
+      match_labels = {
+        app = "item-microservice"
+      }
+    }
+    template {
+      metadata {
+        labels = {
+          app = "item-microservice"
+        }
+      }
+      spec {
+        container {
+          image = "ghcr.io/dattito/nextit/item-microservice:0.2"
+          name  = "item-microservice"
+
+          env {
+            name = "DATABASE_URL"
+            value = "postgres://postgres:${random_password.item_microservice_postgres.result
+            }@item-microservice-postgres-postgresql:5432/postgres"
+          }
+
+          port {
+            container_port = "50051"
+          }
+        }
+      }
+    }
+  }
+}
+
+resource "kubernetes_service" "item_microservice" {
+  metadata {
+    name = "item-microservice"
+  }
+  spec {
+    selector = {
+      app = kubernetes_deployment.item_microservice.spec.0.template.0.metadata.0.labels.app
+    }
+    port {
+      port        = 50051
+      target_port = 50051
+      node_port   = 30051
+    }
+
+    type = "NodePort"
+  }
 }

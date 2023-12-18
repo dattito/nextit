@@ -26,4 +26,4 @@ query QUERY:
   @docker exec -it postgres-nextit-item-microservice psql -U postgres -c "{{QUERY}}"
 
 build:
-  docker build -t nextit-item-microservice .
+  docker build -t ghcr.io/dattito/nextit/item-microservice .

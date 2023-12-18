@@ -19,5 +19,7 @@ COPY --from=builder /app/target/*-unknown-linux-musl/release/item-microservice /
 
 EXPOSE 50051
 
+LABEL org.opencontainers.image.source=https://github.com/dattito/nextit
+
 ENTRYPOINT ["/item-microservice"]
 
