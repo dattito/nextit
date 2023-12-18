@@ -96,7 +96,7 @@ impl ItemService for XItemService {
 
 #[tokio::main]
 async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
-    let addr = "127.0.0.1:50051".parse().unwrap();
+    let addr = "0.0.0.0:50051".parse().unwrap();
     let db_pool = PgPool::connect(
         &std::env::var("DATABASE_URL").expect("environment variable \"DATABASE_URL\""),
     )

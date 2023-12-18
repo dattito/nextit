@@ -5,7 +5,7 @@
 Make sure that Terraform and Kind are installed:
 
 ```
-brew install terraform kind
+brew install hashicorp/tap/terraform kind
 ```
 
 In the `nextit/terraform` directory, execute
