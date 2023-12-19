@@ -1,6 +1,4 @@
 import PublicNavbar from "@/components/publicnavabar";
-import itemService from "@/lib/items";
-import { AddItemRequest, Empty } from "@/proto/item_pb";
 
 export const dynamic = "force-dynamic";
 
