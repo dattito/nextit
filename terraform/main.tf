@@ -28,11 +28,6 @@ variable "authentik_bootstrap_password" {
   sensitive = true
 }
 
-resource "random_password" "authentik_bootstrap_token" {
-  length  = 48
-  special = true
-}
-
 variable "authentik_nextit_clientid" {
   type      = string
   sensitive = true
@@ -142,10 +137,16 @@ resource "helm_release" "authentik" {
   }
 }
 
+resource "random_password" "authentik_bootstrap_token" {
+  length  = 48
+  special = true
+}
+
 # ----------------------------------------
 # AUTHENTIK
 # ----------------------------------------
 
+# AUTHENTICATION FLOW
 data "authentik_flow" "default-authorization-flow" {
   depends_on = [helm_release.authentik]
   slug       = "default-provider-authorization-explicit-consent"
@@ -167,26 +168,31 @@ resource "authentik_flow" "nextit-login-flow" {
 }
 
 data "authentik_stage" "default-authentication-identification" {
-  name = "default-authentication-identification"
+  depends_on = [helm_release.authentik]
+  name       = "default-authentication-identification"
 }
 
 resource "authentik_flow_stage_binding" "login-1" {
-  target = authentik_flow.nextit-login-flow.uuid
-  stage  = data.authentik_stage.default-authentication-identification.id
-  order  = 10
+  depends_on = [helm_release.authentik]
+  target     = authentik_flow.nextit-login-flow.uuid
+  stage      = data.authentik_stage.default-authentication-identification.id
+  order      = 10
 }
 
 data "authentik_stage" "default-authentication-password" {
-  name = "default-authentication-password"
+  depends_on = [helm_release.authentik]
+  name       = "default-authentication-password"
 }
 
 resource "authentik_flow_stage_binding" "login-2" {
-  target = authentik_flow.nextit-login-flow.uuid
-  stage  = data.authentik_stage.default-authentication-password.id
-  order  = 20
+  depends_on = [helm_release.authentik]
+  target     = authentik_flow.nextit-login-flow.uuid
+  stage      = data.authentik_stage.default-authentication-password.id
+  order      = 20
 }
 
 resource "authentik_policy_expression" "flow-password-policy" {
+  depends_on = [helm_release.authentik]
   name       = "nextit-flow-password-policy"
   expression = <<EOT
 flow_plan = request.context.get("flow_plan")
@@ -197,30 +203,208 @@ EOT
 }
 
 resource "authentik_policy_binding" "flow-password-policy" {
-  target = authentik_flow_stage_binding.login-2.id
-  policy = authentik_policy_expression.flow-password-policy.id
-  order  = 0
+  depends_on = [helm_release.authentik]
+  target     = authentik_flow_stage_binding.login-2.id
+  policy     = authentik_policy_expression.flow-password-policy.id
+  order      = 0
 }
 
 data "authentik_stage" "default-authentication-mfa-validation" {
-  name = "default-authentication-mfa-validation"
+  depends_on = [helm_release.authentik]
+  name       = "default-authenticator-totp-setup"
+}
+
+resource "authentik_stage_authenticator_validate" "mfa-validation" {
+  depends_on            = [helm_release.authentik]
+  name                  = "mfa-validation"
+  device_classes        = ["totp"]
+  not_configured_action = "configure"
+  configuration_stages  = [data.authentik_stage.default-authentication-mfa-validation.id]
 }
 
 resource "authentik_flow_stage_binding" "login-3" {
-  target = authentik_flow.nextit-login-flow.uuid
-  stage  = data.authentik_stage.default-authentication-mfa-validation.id
-  order  = 30
+  depends_on = [helm_release.authentik]
+  target     = authentik_flow.nextit-login-flow.uuid
+  stage      = authentik_stage_authenticator_validate.mfa-validation.id
+  order      = 30
 }
 
-data "authentik_stage" "default-authentication-login" {
-  name = "default-authentication-login"
+resource "authentik_stage_user_login" "user_login" {
+  name               = "nextit_user_login_stage"
+  remember_me_offset = "days=30"
 }
 
 resource "authentik_flow_stage_binding" "login-4" {
-  target = authentik_flow.nextit-login-flow.uuid
-  stage  = data.authentik_stage.default-authentication-login.id
-  order  = 100
+  depends_on = [helm_release.authentik]
+  target     = authentik_flow.nextit-login-flow.uuid
+  stage      = authentik_stage_user_login.user_login.id
+  order      = 40
 }
+
+# ENROLLMENT FLOW SETUP
+resource "authentik_flow" "nextit-enrollment-flow" {
+  depends_on  = [helm_release.authentik]
+  name        = "mfa-signup"
+  slug        = "nextit-signup"
+  title       = "NextIT-Registrierung"
+  designation = "enrollment"
+}
+
+resource "authentik_stage_invitation" "invitation" {
+  depends_on = [helm_release.authentik]
+  name       = "nextit-invitation"
+}
+
+resource "authentik_flow_stage_binding" "signup-1" {
+  depends_on = [helm_release.authentik]
+  target     = authentik_flow.nextit-enrollment-flow.uuid
+  stage      = authentik_stage_invitation.invitation.id
+  order      = 10
+}
+
+resource "authentik_stage_prompt_field" "username" {
+  depends_on  = [helm_release.authentik]
+  name        = "nextit-enrollment-username"
+  label       = "Username"
+  type        = "username"
+  required    = true
+  placeholder = "Username"
+  field_key   = "username"
+  order       = 0
+}
+
+resource "authentik_stage_prompt_field" "password" {
+  depends_on  = [helm_release.authentik]
+  name        = "nextit-enrollment-password"
+  label       = "Password"
+  type        = "password"
+  required    = true
+  placeholder = "Password"
+  field_key   = "password"
+  order       = 300
+}
+
+resource "authentik_stage_prompt_field" "password-repeat" {
+  depends_on  = [helm_release.authentik]
+  name        = "nextit-enrollment-password-repeat"
+  label       = "Password (Bestätigung)"
+  type        = "password"
+  required    = true
+  placeholder = "Password (Bestätigung)"
+  field_key   = "password_repeat"
+  order       = 301
+}
+
+resource "authentik_stage_prompt" "signup-2" {
+  depends_on = [helm_release.authentik]
+  name       = "nextit-username-password-repeated"
+  fields = [
+    authentik_stage_prompt_field.username.id,
+    authentik_stage_prompt_field.password.id,
+    authentik_stage_prompt_field.password-repeat.id,
+  ]
+}
+
+resource "authentik_flow_stage_binding" "signup-2" {
+  depends_on = [helm_release.authentik]
+  target     = authentik_flow.nextit-enrollment-flow.uuid
+  stage      = authentik_stage_prompt.signup-2.id
+  order      = 20
+}
+
+resource "authentik_stage_prompt_field" "name" {
+  depends_on  = [helm_release.authentik]
+  name        = "nextit-enrollment-name"
+  label       = "Vor- und Nachname"
+  type        = "text"
+  required    = true
+  placeholder = "Vor- und Nachname"
+  field_key   = "name"
+  order       = 0
+}
+
+resource "authentik_stage_prompt_field" "email" {
+  depends_on  = [helm_release.authentik]
+  name        = "nextit-enrollment-email"
+  label       = "E-Mail"
+  type        = "email"
+  required    = true
+  placeholder = "E-Mail"
+  field_key   = "email"
+  order       = 1
+}
+
+resource "authentik_stage_prompt" "signup-3" {
+  depends_on = [helm_release.authentik]
+  name       = "nextit-name-email"
+  fields = [
+    authentik_stage_prompt_field.name.id,
+    authentik_stage_prompt_field.email.id,
+  ]
+}
+
+resource "authentik_flow_stage_binding" "signup-3" {
+  depends_on = [helm_release.authentik]
+  target     = authentik_flow.nextit-enrollment-flow.uuid
+  stage      = authentik_stage_prompt.signup-3.id
+  order      = 30
+}
+
+resource "authentik_group" "customers" {
+  depends_on   = [helm_release.authentik]
+  name         = "customers"
+  is_superuser = false
+}
+
+resource "authentik_stage_user_write" "signup-4" {
+  depends_on               = [helm_release.authentik]
+  name                     = "user-write"
+  create_users_as_inactive = false
+  user_creation_mode       = "always_create"
+  create_users_group       = authentik_group.customers.id
+}
+
+resource "authentik_flow_stage_binding" "signup-4" {
+  depends_on = [helm_release.authentik]
+  target     = authentik_flow.nextit-enrollment-flow.uuid
+  stage      = authentik_stage_user_write.signup-4.id
+  order      = 40
+}
+
+data "authentik_flow" "totp-setup" {
+  depends_on = [helm_release.authentik]
+  slug       = "default-authenticator-totp-setup"
+}
+
+resource "authentik_stage_authenticator_totp" "signup-5" {
+  depends_on     = [helm_release.authentik]
+  name           = "nextit_totp"
+  friendly_name  = "NextIT"
+  configure_flow = data.authentik_flow.totp-setup.id
+}
+
+resource "authentik_flow_stage_binding" "signup-5" {
+  depends_on = [helm_release.authentik]
+  target     = authentik_flow.nextit-enrollment-flow.uuid
+  stage      = authentik_stage_authenticator_totp.signup-5.id
+  order      = 50
+}
+
+resource "authentik_flow_stage_binding" "signup-6" {
+  depends_on = [helm_release.authentik]
+  target     = authentik_flow.nextit-enrollment-flow.uuid
+  stage      = authentik_stage_user_write.signup-4.id
+  order      = 60
+}
+
+resource "authentik_flow_stage_binding" "signup-7" {
+  depends_on = [helm_release.authentik]
+  target     = authentik_flow.nextit-enrollment-flow.uuid
+  stage      = authentik_stage_user_login.user_login.id
+  order      = 70
+}
+
+# PROVIDER & APPLICATION
 
 data "authentik_scope_mapping" "oauth" {
   depends_on = [helm_release.authentik]
@@ -237,6 +421,7 @@ data "authentik_certificate_key_pair" "default" {
 }
 
 resource "authentik_provider_oauth2" "nextjs_web" {
+  depends_on          = [helm_release.authentik]
   name                = "nextit"
   client_id           = var.authentik_nextit_clientid
   client_secret       = var.authentik_nextit_clientsecret
@@ -247,13 +432,13 @@ resource "authentik_provider_oauth2" "nextjs_web" {
 }
 
 resource "authentik_tenant" "default" {
+  depends_on          = [helm_release.authentik]
   domain              = var.authentik_endpoint_domain
   flow_authentication = authentik_flow.nextit-login-flow.uuid
   branding_title      = "NextIT"
   branding_logo       = "/media/assets/logo.png"
   branding_favicon    = "/media/assets/favicon.ico"
 }
-
 # ----------------------------------------
 # ITEM MICROSERVICE
 # ----------------------------------------
