@@ -3,12 +3,12 @@ import LogoutButton from "./logout-button";
 
 export default function InternNavbar() {
   return (
-    <nav class="navbar bg-body-tertiary">
-      <div class="container-fluid">
-        <a class="navbar-brand">
+    <nav className="navbar bg-body-tertiary">
+      <div className="container-fluid">
+        <a className="navbar-brand">
           <Image src="/Logo_wide.png" width={100} height={0} />
         </a>
-        <div class="d-flex">
+        <div className="d-flex">
           <LogoutButton />
         </div>
       </div>
