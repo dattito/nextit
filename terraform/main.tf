@@ -43,8 +43,13 @@ variable "authentik_nextit_clientsecret" {
   sensitive = true
 }
 
-variable "authentik_endpoint" {
+variable "authentik_endpoint_domain" {
   type = string
+}
+
+variable "authentik_endpoint_protocol" {
+  type    = string
+  default = "https"
 }
 
 resource "kind_cluster" "docker" {
@@ -86,7 +91,7 @@ provider "helm" {
 }
 
 provider "authentik" {
-  url   = var.authentik_endpoint
+  url   = "${var.authentik_endpoint_protocol}://${var.authentik_endpoint_domain}"
   token = random_password.authentik_bootstrap_token.result
 }
 
@@ -102,7 +107,20 @@ resource "helm_release" "cert_manager" {
   }
 }
 
+resource "kubernetes_config_map" "authentik_assets" {
+  metadata {
+    name = "authentik-assets"
+  }
+
+  binary_data = {
+    "logo.png"    = "${filebase64("assets/logo.png")}"
+    "favicon.ico" = "${filebase64("assets/favicon.ico")}"
+    # "background.jpg" = "${filebase64("assets/background.jpg")}"
+  }
+}
+
 resource "helm_release" "authentik" {
+  depends_on = [kubernetes_config_map.authentik_assets]
   name       = "authentik"
   repository = "https://charts.goauthentik.io"
   chart      = "authentik"
@@ -133,6 +151,77 @@ data "authentik_flow" "default-authorization-flow" {
   slug       = "default-provider-authorization-explicit-consent"
 }
 
+resource "authentik_application" "nextjs-web" {
+  name              = "Next-IT Dashboard"
+  slug              = "nextit"
+  protocol_provider = authentik_provider_oauth2.nextjs_web.id
+}
+
+resource "authentik_flow" "nextit-login-flow" {
+  depends_on  = [helm_release.authentik]
+  slug        = "nextit-login"
+  name        = "NextIT"
+  designation = "authentication"
+  title       = "Anmelden bei NextIT"
+  # background  = "/assets/background.jpg"
+}
+
+data "authentik_stage" "default-authentication-identification" {
+  name = "default-authentication-identification"
+}
+
+resource "authentik_flow_stage_binding" "login-1" {
+  target = authentik_flow.nextit-login-flow.uuid
+  stage  = data.authentik_stage.default-authentication-identification.id
+  order  = 10
+}
+
+data "authentik_stage" "default-authentication-password" {
+  name = "default-authentication-password"
+}
+
+resource "authentik_flow_stage_binding" "login-2" {
+  target = authentik_flow.nextit-login-flow.uuid
+  stage  = data.authentik_stage.default-authentication-password.id
+  order  = 20
+}
+
+resource "authentik_policy_expression" "flow-password-policy" {
+  name       = "nextit-flow-password-policy"
+  expression = <<EOT
+flow_plan = request.context.get("flow_plan")
+if not flow_plan:
+    return True
+return not hasattr(flow_plan.context.get("pending_user"), "backend")
+EOT
+}
+
+resource "authentik_policy_binding" "flow-password-policy" {
+  target = authentik_flow_stage_binding.login-2.id
+  policy = authentik_policy_expression.flow-password-policy.id
+  order  = 0
+}
+
+data "authentik_stage" "default-authentication-mfa-validation" {
+  name = "default-authentication-mfa-validation"
+}
+
+resource "authentik_flow_stage_binding" "login-3" {
+  target = authentik_flow.nextit-login-flow.uuid
+  stage  = data.authentik_stage.default-authentication-mfa-validation.id
+  order  = 30
+}
+
+data "authentik_stage" "default-authentication-login" {
+  name = "default-authentication-login"
+}
+
+resource "authentik_flow_stage_binding" "login-4" {
+  target = authentik_flow.nextit-login-flow.uuid
+  stage  = data.authentik_stage.default-authentication-login.id
+  order  = 100
+}
+
 data "authentik_scope_mapping" "oauth" {
   depends_on = [helm_release.authentik]
   managed_list = [
@@ -148,18 +237,21 @@ data "authentik_certificate_key_pair" "default" {
 }
 
 resource "authentik_provider_oauth2" "nextjs_web" {
-  name               = "nextit"
-  client_id          = var.authentik_nextit_clientid
-  client_secret      = var.authentik_nextit_clientsecret
-  authorization_flow = data.authentik_flow.default-authorization-flow.id
-  property_mappings  = data.authentik_scope_mapping.oauth.ids
-  signing_key        = data.authentik_certificate_key_pair.default.id
+  name                = "nextit"
+  client_id           = var.authentik_nextit_clientid
+  client_secret       = var.authentik_nextit_clientsecret
+  authentication_flow = authentik_flow.nextit-login-flow.uuid
+  authorization_flow  = data.authentik_flow.default-authorization-flow.id
+  property_mappings   = data.authentik_scope_mapping.oauth.ids
+  signing_key         = data.authentik_certificate_key_pair.default.id
 }
 
-resource "authentik_application" "nextjs-web" {
-  name              = "Next-IT Dashboard"
-  slug              = "nextit"
-  protocol_provider = authentik_provider_oauth2.nextjs_web.id
+resource "authentik_tenant" "default" {
+  domain              = var.authentik_endpoint_domain
+  flow_authentication = authentik_flow.nextit-login-flow.uuid
+  branding_title      = "NextIT"
+  branding_logo       = "/media/assets/logo.png"
+  branding_favicon    = "/media/assets/favicon.ico"
 }
 
 # ----------------------------------------

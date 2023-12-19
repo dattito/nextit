@@ -25,3 +25,12 @@ redis:
 service:
   type: NodePort
   nodePort: 30123
+
+volumes:
+  - name: assets
+    configMap:
+      name: authentik-assets
+
+volumeMounts:
+  - name: assets
+    mountPath: /media/assets
