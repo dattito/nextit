@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "standalone",
+  // todo: REVERT BEFORE COMMIT!!
+  // output: "standalone",
 };
 
 module.exports = nextConfig;
