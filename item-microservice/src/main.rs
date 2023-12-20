@@ -101,6 +101,9 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         &std::env::var("DATABASE_URL").expect("environment variable \"DATABASE_URL\""),
     )
     .await?;
+
+    sqlx::migrate!("./migrations").run(&db_pool).await?;
+
     let item_service = XItemService::new(db_pool);
 
     let reflector_service = tonic_reflection::server::Builder::configure()
@@ -108,7 +111,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         .build()
         .unwrap();
 
-    println!("GreeterServer listening on {}", addr);
+    println!("Started ItemService listening on {}", addr);
 
     Server::builder()
         .add_service(ItemServiceServer::new(item_service))

@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package item;
+
+service ItemService {
+  rpc AddItem (AddItemRequest) returns (AddItemResponse) {}
+  rpc GetItems (Empty) returns (GetItemsResponse) {}
+  rpc DeleteItem (DeleteItemRequest) returns (Empty) {}
+}
+
+message AddItemRequest {
+  string name = 1;
+}
+
+message AddItemResponse {
+  string id = 1;
+}
+
+message GetItemsResponse {
+  repeated Item items = 1;
+}
+
+message Item {
+  string name = 1;
+  string id = 2;
+}
+
+message DeleteItemRequest {
+  string id = 1;
+}
+
+message Empty {}

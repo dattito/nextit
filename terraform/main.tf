@@ -505,7 +505,7 @@ resource "kubernetes_deployment" "item_microservice" {
       }
       spec {
         container {
-          image = "ghcr.io/dattito/nextit/item-microservice:0.2"
+          image = "ghcr.io/dattito/nextit/item-microservice:0.3"
           name  = "item-microservice"
 
           env {
