@@ -13,23 +13,23 @@ export default function PublicContent() {
   <div className="container mt-5 mb-3">
     {/* Bild mit Text auf der linken Seite */}
     <div className="row mt-4">
-      <div className="col-md-6">
-        <Image src="/slider2.jpg" height={500} width={500} alt="Erfolgreich Vernetzen" fluid />
+      <div className="col-lg-6">
+        <Image src="/slider2.jpg" height={280} width={500} alt="Erfolgreich Vernetzen" fluid />
       </div>
-      <div className="col-md-6">
-        <h4>Erfolgreich Vernetzen</h4>
+      <div className="col-lg-6">
+        <h4 className="mt-2">Erfolgreich Vernetzen</h4>
         <p>Unsere Experten sorgen für eine nahtlose Vernetzung Ihrer IT-Systeme. Wir entwickeln individuelle Lösungen, die perfekt auf Ihre Anforderungen zugeschnitten sind. Von der Netzwerkarchitektur bis zur Implementierung stehen wir Ihnen zur Seite, um sicherzustellen, dass Ihre Systeme reibungslos zusammenarbeiten.</p>
       </div>
     </div>
 
     {/* Bild mit Text auf der rechten Seite */}
     <div className="row mt-5">
-      <div className="col-md-6">
-        <h4>Erfolgreich Designen</h4>
-        <p>Ein ansprechendes Design ist entscheidend für den Erfolg Ihrer digitalen Präsenz. Unsere erfahrenen Designer arbeiten eng mit Ihnen zusammen, um ein modernes und benutzerfreundliches Design zu schaffen. Von der Konzeptentwicklung bis zur Umsetzung setzen wir Ihre Vision in visuell ansprechende Designs um.</p>
+      <div className="col-lg-6">
+        <Image src="/slider3.jpg" height={280} width={500} alt="Erfolgreich Designen" fluid />
       </div>
-      <div className="col-md-6">
-        <Image src="/slider3.jpg" height={500} width={500} alt="Erfolgreich Designen" fluid />
+      <div className="col-lg-6">
+        <h4 className="mt-2">Erfolgreich Designen</h4>
+        <p>Ein ansprechendes Design ist entscheidend für den Erfolg Ihrer digitalen Präsenz. Unsere erfahrenen Designer arbeiten eng mit Ihnen zusammen, um ein modernes und benutzerfreundliches Design zu schaffen. Von der Konzeptentwicklung bis zur Umsetzung setzen wir Ihre Vision in visuell ansprechende Designs um.</p>
       </div>
     </div>
 

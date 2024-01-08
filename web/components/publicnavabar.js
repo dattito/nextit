@@ -6,7 +6,7 @@ export default function PublicNavbar() {
     <nav className="navbar bg-body-tertiary">
       <div className="container-fluid">
         <a className="navbar-brand">
-          <Image src="/Logo_wide.png" width={100} height={0} alt="Logo" />
+          <Image src="/Logo_wide.png" width={100} height={23} alt="Logo" />
         </a>
         <div className="d-flex">
           <LoginButton />
