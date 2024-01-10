@@ -59,7 +59,7 @@ resource "kubernetes_deployment" "item_microservice" {
       }
       spec {
         container {
-          image = "ghcr.io/dattito/nextit/item-microservice:0.3"
+          image = "ghcr.io/dattito/nextit/item-microservice:0.3-${var.platform}"
           name  = "item-microservice"
 
           env {
@@ -91,6 +91,6 @@ resource "kubernetes_service" "item_microservice" {
       node_port   = 30051
     }
 
-    type = "NodePort"
+    type = var.test_setup ? "NodePort" : "ClusterIP"
   }
 }

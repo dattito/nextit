@@ -27,3 +27,8 @@ query QUERY:
 
 build:
   docker build -t ghcr.io/dattito/nextit/item-microservice .
+
+buildx:
+  docker buildx build -t ghcr.io/dattito/nextit/item-microservice:0.3-amd --platform=linux/amd64 --push .
+  docker buildx build -t ghcr.io/dattito/nextit/item-microservice:0.3-arm --platform=linux/arm64 --push .
+

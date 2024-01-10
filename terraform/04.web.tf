@@ -35,7 +35,7 @@ resource "helm_release" "web_postgres" {
 
   set {
     name  = "primary.service.type"
-    value = "NodePort"
+    value = var.test_setup ? "NodePort" : "ClusterIP"
   }
 
   set {
