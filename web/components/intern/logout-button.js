@@ -13,7 +13,7 @@ export default function LogoutButton() {
         await signOut({
           redirect: false,
         });
-        router.replace("https://google.com");
+        router.replace(process.env.NEXT_PUBLIC_AUTHENTIK_LOGOUT_URL);
       }}
     >
       Log Out

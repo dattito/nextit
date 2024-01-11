@@ -6,7 +6,7 @@ export default function InternNavbar() {
     <nav className="navbar bg-body-tertiary">
       <div className="container-fluid">
         <a className="navbar-brand">
-          <Image src="/Logo_wide.png" width={100} height={23} />
+          <Image src="/Logo_wide.png" width={100} height={23} alt="logo" />
         </a>
         <div className="d-flex">
           <LogoutButton />
