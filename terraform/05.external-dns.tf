@@ -95,7 +95,7 @@ resource "kubernetes_deployment" "external_dns" {
             "--source=ingress",
             "--domain-filter=${var.cloudflare_domain_filter}",
             "--provider=cloudflare",
-            "--cloudflare-proxied",
+            # "--cloudflare-proxied",
             "--cloudflare-dns-records-per-page=5000",
           ]
           env {

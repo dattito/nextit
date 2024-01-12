@@ -2,3 +2,4 @@
 nextit-config
 .terraform/
 
+zcloud.auto.tfvars

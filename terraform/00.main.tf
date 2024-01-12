@@ -17,12 +17,16 @@ terraform {
       version = "2023.10.0"
     }
     kubectl = {
-      source  = "gavinbunney/kubectl"
-      version = "1.14.0"
+      source  = "alekc/kubectl"
+      version = "~> 2.0"
     }
     random = {
       source  = "hashicorp/random"
       version = "3.6.0"
+    }
+    time = {
+      source  = "hashicorp/time"
+      version = "0.10.0"
     }
   }
 }

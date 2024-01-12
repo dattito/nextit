@@ -3,19 +3,13 @@ authentik:
   # This sends anonymous usage-data, stack traces on errors and
   # performance data to sentry.beryju.org, and is fully opt-in
   error_reporting:
-    enabled: true
+    enabled: false
   postgresql:
     password: "ThisIsNotASecurePassword"
 
 postgresql:
   enabled: true
   postgresqlPassword: "ThisIsNotASecurePassword"
-
-redis:
-  enabled: true
-
-service:
-  nodePort: 30123
 
 volumes:
   - name: assets
