@@ -3,7 +3,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import NextAuth from "next-auth";
 import AuthentikProvider from "next-auth/providers/authentik";
 
-const handler = NextAuth({
+export const authOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
     AuthentikProvider({
@@ -13,6 +13,8 @@ const handler = NextAuth({
       issuer: process.env.AUTHENTIK_ISSUER,
     }),
   ],
-});
+};
+
+const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };
