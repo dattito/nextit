@@ -3,7 +3,7 @@
 import { signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
-export default function LogoutButton() {
+export default function LogoutButton({ logoutUrl }) {
   const router = useRouter();
 
   return (
@@ -13,7 +13,7 @@ export default function LogoutButton() {
         await signOut({
           redirect: false,
         });
-        router.replace(process.env.NEXT_PUBLIC_AUTHENTIK_LOGOUT_URL);
+        router.replace(logoutUrl);
       }}
     >
       Log Out
