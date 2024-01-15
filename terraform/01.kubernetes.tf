@@ -1,5 +1,6 @@
 resource "kind_cluster" "docker" {
-  name = "nextit"
+  count = var.test_setup ? 1 : 0
+  name  = "nextit"
 
   kind_config {
     kind        = "Cluster"
@@ -25,30 +26,34 @@ resource "kind_cluster" "docker" {
   }
 }
 
+provider "kubectl" {
+  host                   = var.test_setup ? kind_cluster.docker[0].endpoint : ""
+  client_certificate     = var.test_setup ? kind_cluster.docker[0].client_certificate : ""
+  client_key             = var.test_setup ? kind_cluster.docker[0].client_key : ""
+  cluster_ca_certificate = var.test_setup ? kind_cluster.docker[0].cluster_ca_certificate : ""
+
+  config_path    = var.test_setup ? "" : "~/.kube/config"
+  config_context = var.test_setup ? "" : "nextit"
+}
+
 provider "kubernetes" {
-  host                   = kind_cluster.docker.endpoint
-  client_certificate     = kind_cluster.docker.client_certificate
-  client_key             = kind_cluster.docker.client_key
-  cluster_ca_certificate = kind_cluster.docker.cluster_ca_certificate
+  host                   = var.test_setup ? kind_cluster.docker[0].endpoint : ""
+  client_certificate     = var.test_setup ? kind_cluster.docker[0].client_certificate : ""
+  client_key             = var.test_setup ? kind_cluster.docker[0].client_key : ""
+  cluster_ca_certificate = var.test_setup ? kind_cluster.docker[0].cluster_ca_certificate : ""
+
+  config_path    = var.test_setup ? "" : "~/.kube/config"
+  config_context = var.test_setup ? "" : "nextit"
 }
 
 provider "helm" {
   kubernetes {
-    host                   = kind_cluster.docker.endpoint
-    client_certificate     = kind_cluster.docker.client_certificate
-    client_key             = kind_cluster.docker.client_key
-    cluster_ca_certificate = kind_cluster.docker.cluster_ca_certificate
+    host                   = var.test_setup ? kind_cluster.docker[0].endpoint : ""
+    client_certificate     = var.test_setup ? kind_cluster.docker[0].client_certificate : ""
+    client_key             = var.test_setup ? kind_cluster.docker[0].client_key : ""
+    cluster_ca_certificate = var.test_setup ? kind_cluster.docker[0].cluster_ca_certificate : ""
+
+    config_path    = var.test_setup ? "" : "~/.kube/config"
+    config_context = var.test_setup ? "" : "nextit"
   }
 }
-
-# resource "helm_release" "cert_manager" {
-#   name       = "cert-manager"
-#   repository = "https://charts.jetstack.io"
-#   chart      = "cert-manager"
-#   namespace  = "default"
-#   version    = "v1.13.3"
-#   set {
-#     name  = "installCRDs"
-#     value = "true"
-#   }
-# }

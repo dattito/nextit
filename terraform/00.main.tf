@@ -16,9 +16,17 @@ terraform {
       source  = "goauthentik/authentik"
       version = "2023.10.0"
     }
+    kubectl = {
+      source  = "alekc/kubectl"
+      version = "~> 2.0"
+    }
     random = {
       source  = "hashicorp/random"
       version = "3.6.0"
+    }
+    time = {
+      source  = "hashicorp/time"
+      version = "0.10.0"
     }
   }
 }
@@ -50,4 +58,21 @@ variable "authentik_endpoint_protocol" {
 variable "web_postgres_password" {
   type      = string
   sensitive = true
+}
+
+variable "test_setup" {
+  type    = bool
+  default = true
+}
+
+variable "acme_email" {
+  type = string
+}
+
+variable "traefik_authentik_domain" {
+  type = string
+}
+
+variable "platform" {
+  default = "arm"
 }

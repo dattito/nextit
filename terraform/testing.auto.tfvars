@@ -4,3 +4,11 @@ authentik_endpoint_protocol   = "http"
 authentik_nextit_clientid     = "nextit-clientid"
 authentik_nextit_clientsecret = "nextit-clientsecret"
 web_postgres_password         = "postgres"
+
+test_setup = true
+
+cloudflare_api_token     = ""
+cloudflare_domain_filter = ""
+traefik_authentik_domain = ""
+traefik_web_domain       = ""
+acme_email               = ""

@@ -1,5 +1,5 @@
 resource "random_password" "item_microservice_postgres" {
-  length  = 32
+  length  = 16
   special = false
 }
 
@@ -59,13 +59,12 @@ resource "kubernetes_deployment" "item_microservice" {
       }
       spec {
         container {
-          image = "ghcr.io/dattito/nextit/item-microservice:0.3"
+          image = "ghcr.io/dattito/nextit/item-microservice:0.3-${var.platform}"
           name  = "item-microservice"
 
           env {
-            name = "DATABASE_URL"
-            value = "postgres://postgres:${random_password.item_microservice_postgres.result
-            }@item-microservice-postgres-postgresql:5432/postgres"
+            name  = "DATABASE_URL"
+            value = "postgres://postgres:${random_password.item_microservice_postgres.result}@item-microservice-postgres-postgresql:5432/postgres"
           }
 
           port {
@@ -88,9 +87,9 @@ resource "kubernetes_service" "item_microservice" {
     port {
       port        = 50051
       target_port = 50051
-      node_port   = 30051
+      node_port   = var.test_setup ? 30051 : 0
     }
 
-    type = "NodePort"
+    type = var.test_setup ? "NodePort" : "ClusterIP"
   }
 }

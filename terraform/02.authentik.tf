@@ -1,3 +1,8 @@
+resource "random_password" "authentik_bootstrap_token" {
+  length  = 48
+  special = false
+}
+
 provider "authentik" {
   url   = "${var.authentik_endpoint_protocol}://${var.authentik_endpoint_domain}"
   token = random_password.authentik_bootstrap_token.result
@@ -21,11 +26,26 @@ resource "helm_release" "authentik" {
   repository = "https://charts.goauthentik.io"
   chart      = "authentik"
   namespace  = "default"
-  version    = "2023.10.4"
+  version    = "2023.10.5"
 
   values = [
     file("authentik-helm-values.yaml"),
   ]
+
+  set {
+    name  = "service.type"
+    value = var.test_setup ? "NodePort" : "ClusterIP"
+  }
+
+  set {
+    name  = "service.nodePort"
+    value = "30123"
+  }
+
+  set {
+    name  = "redis.enabled"
+    value = "true"
+  }
 
   set {
     name  = "env.AUTHENTIK_BOOTSTRAP_PASSWORD"
@@ -36,11 +56,42 @@ resource "helm_release" "authentik" {
     name  = "env.AUTHENTIK_BOOTSTRAP_TOKEN"
     value = random_password.authentik_bootstrap_token.result
   }
+
+  set {
+    name  = "ingress.enabled"
+    value = var.test_setup ? "false" : "true"
+  }
+
+  set {
+    name  = "ingress.hosts[0].host"
+    value = var.traefik_authentik_domain
+  }
+
+  set {
+    name  = "ingress.hosts[0].paths[0].path"
+    value = "/"
+  }
+
+  set {
+    name  = "ingress.hosts[0].paths[0].pathType"
+    value = "Prefix"
+  }
+
+  set {
+    name  = "ingress.tls[0].hosts[0]"
+    value = var.traefik_authentik_domain
+  }
+
+  set {
+    name  = "ingress.tls[0].secretName"
+    value = "nextitcloud-tls"
+  }
 }
 
-resource "random_password" "authentik_bootstrap_token" {
-  length  = 48
-  special = true
+resource "time_sleep" "wait_5min_for_dns_and_certificate" {
+  depends_on = [helm_release.authentik]
+
+  create_duration = var.test_setup ? "0s" : "300s"
 }
 
 # ----------------------------------------
@@ -49,7 +100,7 @@ resource "random_password" "authentik_bootstrap_token" {
 
 # AUTHENTICATION FLOW
 data "authentik_flow" "default-authorization-flow" {
-  depends_on = [helm_release.authentik]
+  depends_on = [time_sleep.wait_5min_for_dns_and_certificate]
   slug       = "default-provider-authorization-explicit-consent"
 }
 
@@ -60,7 +111,7 @@ resource "authentik_application" "nextjs-web" {
 }
 
 resource "authentik_flow" "nextit-login-flow" {
-  depends_on  = [helm_release.authentik]
+  depends_on  = [time_sleep.wait_5min_for_dns_and_certificate]
   slug        = "nextit-login"
   name        = "NextIT"
   designation = "authentication"
@@ -69,31 +120,31 @@ resource "authentik_flow" "nextit-login-flow" {
 }
 
 data "authentik_stage" "default-authentication-identification" {
-  depends_on = [helm_release.authentik]
+  depends_on = [time_sleep.wait_5min_for_dns_and_certificate]
   name       = "default-authentication-identification"
 }
 
 resource "authentik_flow_stage_binding" "login-1" {
-  depends_on = [helm_release.authentik]
+  depends_on = [time_sleep.wait_5min_for_dns_and_certificate]
   target     = authentik_flow.nextit-login-flow.uuid
   stage      = data.authentik_stage.default-authentication-identification.id
   order      = 10
 }
 
 data "authentik_stage" "default-authentication-password" {
-  depends_on = [helm_release.authentik]
+  depends_on = [time_sleep.wait_5min_for_dns_and_certificate]
   name       = "default-authentication-password"
 }
 
 resource "authentik_flow_stage_binding" "login-2" {
-  depends_on = [helm_release.authentik]
+  depends_on = [time_sleep.wait_5min_for_dns_and_certificate]
   target     = authentik_flow.nextit-login-flow.uuid
   stage      = data.authentik_stage.default-authentication-password.id
   order      = 20
 }
 
 resource "authentik_policy_expression" "flow-password-policy" {
-  depends_on = [helm_release.authentik]
+  depends_on = [time_sleep.wait_5min_for_dns_and_certificate]
   name       = "nextit-flow-password-policy"
   expression = <<EOT
 flow_plan = request.context.get("flow_plan")
@@ -104,19 +155,19 @@ EOT
 }
 
 resource "authentik_policy_binding" "flow-password-policy" {
-  depends_on = [helm_release.authentik]
+  depends_on = [time_sleep.wait_5min_for_dns_and_certificate]
   target     = authentik_flow_stage_binding.login-2.id
   policy     = authentik_policy_expression.flow-password-policy.id
   order      = 0
 }
 
 data "authentik_stage" "default-authentication-mfa-validation" {
-  depends_on = [helm_release.authentik]
+  depends_on = [time_sleep.wait_5min_for_dns_and_certificate]
   name       = "default-authenticator-totp-setup"
 }
 
 resource "authentik_stage_authenticator_validate" "mfa-validation" {
-  depends_on            = [helm_release.authentik]
+  depends_on            = [time_sleep.wait_5min_for_dns_and_certificate]
   name                  = "mfa-validation"
   device_classes        = ["totp"]
   not_configured_action = "configure"
@@ -124,20 +175,20 @@ resource "authentik_stage_authenticator_validate" "mfa-validation" {
 }
 
 resource "authentik_flow_stage_binding" "login-3" {
-  depends_on = [helm_release.authentik]
+  depends_on = [time_sleep.wait_5min_for_dns_and_certificate]
   target     = authentik_flow.nextit-login-flow.uuid
   stage      = authentik_stage_authenticator_validate.mfa-validation.id
   order      = 30
 }
 
 resource "authentik_stage_user_login" "user_login" {
-  depends_on         = [helm_release.authentik]
+  depends_on         = [time_sleep.wait_5min_for_dns_and_certificate]
   name               = "nextit_user_login_stage"
   remember_me_offset = "days=30"
 }
 
 resource "authentik_flow_stage_binding" "login-4" {
-  depends_on = [helm_release.authentik]
+  depends_on = [time_sleep.wait_5min_for_dns_and_certificate]
   target     = authentik_flow.nextit-login-flow.uuid
   stage      = authentik_stage_user_login.user_login.id
   order      = 40
@@ -145,7 +196,7 @@ resource "authentik_flow_stage_binding" "login-4" {
 
 # ENROLLMENT FLOW SETUP
 resource "authentik_flow" "nextit-enrollment-flow" {
-  depends_on  = [helm_release.authentik]
+  depends_on  = [time_sleep.wait_5min_for_dns_and_certificate]
   name        = "mfa-signup"
   slug        = "nextit-signup"
   title       = "NextIT-Registrierung"
@@ -153,19 +204,19 @@ resource "authentik_flow" "nextit-enrollment-flow" {
 }
 
 resource "authentik_stage_invitation" "invitation" {
-  depends_on = [helm_release.authentik]
+  depends_on = [time_sleep.wait_5min_for_dns_and_certificate]
   name       = "nextit-invitation"
 }
 
 resource "authentik_flow_stage_binding" "signup-1" {
-  depends_on = [helm_release.authentik]
+  depends_on = [time_sleep.wait_5min_for_dns_and_certificate]
   target     = authentik_flow.nextit-enrollment-flow.uuid
   stage      = authentik_stage_invitation.invitation.id
   order      = 10
 }
 
 resource "authentik_stage_prompt_field" "username" {
-  depends_on  = [helm_release.authentik]
+  depends_on  = [time_sleep.wait_5min_for_dns_and_certificate]
   name        = "nextit-enrollment-username"
   label       = "Username"
   type        = "username"
@@ -176,7 +227,7 @@ resource "authentik_stage_prompt_field" "username" {
 }
 
 resource "authentik_stage_prompt_field" "password" {
-  depends_on  = [helm_release.authentik]
+  depends_on  = [time_sleep.wait_5min_for_dns_and_certificate]
   name        = "nextit-enrollment-password"
   label       = "Password"
   type        = "password"
@@ -187,7 +238,7 @@ resource "authentik_stage_prompt_field" "password" {
 }
 
 resource "authentik_stage_prompt_field" "password-repeat" {
-  depends_on  = [helm_release.authentik]
+  depends_on  = [time_sleep.wait_5min_for_dns_and_certificate]
   name        = "nextit-enrollment-password-repeat"
   label       = "Password (Bestätigung)"
   type        = "password"
@@ -198,7 +249,7 @@ resource "authentik_stage_prompt_field" "password-repeat" {
 }
 
 resource "authentik_stage_prompt" "signup-2" {
-  depends_on = [helm_release.authentik]
+  depends_on = [time_sleep.wait_5min_for_dns_and_certificate]
   name       = "nextit-username-password-repeated"
   fields = [
     authentik_stage_prompt_field.username.id,
@@ -208,14 +259,14 @@ resource "authentik_stage_prompt" "signup-2" {
 }
 
 resource "authentik_flow_stage_binding" "signup-2" {
-  depends_on = [helm_release.authentik]
+  depends_on = [time_sleep.wait_5min_for_dns_and_certificate]
   target     = authentik_flow.nextit-enrollment-flow.uuid
   stage      = authentik_stage_prompt.signup-2.id
   order      = 20
 }
 
 resource "authentik_stage_prompt_field" "name" {
-  depends_on  = [helm_release.authentik]
+  depends_on  = [time_sleep.wait_5min_for_dns_and_certificate]
   name        = "nextit-enrollment-name"
   label       = "Vor- und Nachname"
   type        = "text"
@@ -226,7 +277,7 @@ resource "authentik_stage_prompt_field" "name" {
 }
 
 resource "authentik_stage_prompt_field" "email" {
-  depends_on  = [helm_release.authentik]
+  depends_on  = [time_sleep.wait_5min_for_dns_and_certificate]
   name        = "nextit-enrollment-email"
   label       = "E-Mail"
   type        = "email"
@@ -237,7 +288,7 @@ resource "authentik_stage_prompt_field" "email" {
 }
 
 resource "authentik_stage_prompt" "signup-3" {
-  depends_on = [helm_release.authentik]
+  depends_on = [time_sleep.wait_5min_for_dns_and_certificate]
   name       = "nextit-name-email"
   fields = [
     authentik_stage_prompt_field.name.id,
@@ -246,20 +297,20 @@ resource "authentik_stage_prompt" "signup-3" {
 }
 
 resource "authentik_flow_stage_binding" "signup-3" {
-  depends_on = [helm_release.authentik]
+  depends_on = [time_sleep.wait_5min_for_dns_and_certificate]
   target     = authentik_flow.nextit-enrollment-flow.uuid
   stage      = authentik_stage_prompt.signup-3.id
   order      = 30
 }
 
 resource "authentik_group" "customers" {
-  depends_on   = [helm_release.authentik]
+  depends_on   = [time_sleep.wait_5min_for_dns_and_certificate]
   name         = "customers"
   is_superuser = false
 }
 
 resource "authentik_stage_user_write" "signup-4" {
-  depends_on               = [helm_release.authentik]
+  depends_on               = [time_sleep.wait_5min_for_dns_and_certificate]
   name                     = "user-write"
   create_users_as_inactive = false
   user_creation_mode       = "always_create"
@@ -267,40 +318,40 @@ resource "authentik_stage_user_write" "signup-4" {
 }
 
 resource "authentik_flow_stage_binding" "signup-4" {
-  depends_on = [helm_release.authentik]
+  depends_on = [time_sleep.wait_5min_for_dns_and_certificate]
   target     = authentik_flow.nextit-enrollment-flow.uuid
   stage      = authentik_stage_user_write.signup-4.id
   order      = 40
 }
 
 data "authentik_flow" "totp-setup" {
-  depends_on = [helm_release.authentik]
+  depends_on = [time_sleep.wait_5min_for_dns_and_certificate]
   slug       = "default-authenticator-totp-setup"
 }
 
 resource "authentik_stage_authenticator_totp" "signup-5" {
-  depends_on     = [helm_release.authentik]
+  depends_on     = [time_sleep.wait_5min_for_dns_and_certificate]
   name           = "nextit_totp"
   friendly_name  = "NextIT"
   configure_flow = data.authentik_flow.totp-setup.id
 }
 
 resource "authentik_flow_stage_binding" "signup-5" {
-  depends_on = [helm_release.authentik]
+  depends_on = [time_sleep.wait_5min_for_dns_and_certificate]
   target     = authentik_flow.nextit-enrollment-flow.uuid
   stage      = authentik_stage_authenticator_totp.signup-5.id
   order      = 50
 }
 
 resource "authentik_flow_stage_binding" "signup-6" {
-  depends_on = [helm_release.authentik]
+  depends_on = [time_sleep.wait_5min_for_dns_and_certificate]
   target     = authentik_flow.nextit-enrollment-flow.uuid
   stage      = authentik_stage_user_write.signup-4.id
   order      = 60
 }
 
 resource "authentik_flow_stage_binding" "signup-7" {
-  depends_on = [helm_release.authentik]
+  depends_on = [time_sleep.wait_5min_for_dns_and_certificate]
   target     = authentik_flow.nextit-enrollment-flow.uuid
   stage      = authentik_stage_user_login.user_login.id
   order      = 70
@@ -309,7 +360,7 @@ resource "authentik_flow_stage_binding" "signup-7" {
 # PROVIDER & APPLICATION
 
 data "authentik_scope_mapping" "oauth" {
-  depends_on = [helm_release.authentik]
+  depends_on = [time_sleep.wait_5min_for_dns_and_certificate]
   managed_list = [
     "goauthentik.io/providers/oauth2/scope-email",
     "goauthentik.io/providers/oauth2/scope-profile",
@@ -318,12 +369,12 @@ data "authentik_scope_mapping" "oauth" {
 }
 
 data "authentik_certificate_key_pair" "default" {
-  depends_on = [helm_release.authentik]
+  depends_on = [time_sleep.wait_5min_for_dns_and_certificate]
   name       = "authentik Self-signed Certificate"
 }
 
 resource "authentik_provider_oauth2" "nextjs_web" {
-  depends_on          = [helm_release.authentik]
+  depends_on          = [time_sleep.wait_5min_for_dns_and_certificate]
   name                = "nextit"
   client_id           = var.authentik_nextit_clientid
   client_secret       = var.authentik_nextit_clientsecret
@@ -334,7 +385,7 @@ resource "authentik_provider_oauth2" "nextjs_web" {
 }
 
 resource "authentik_tenant" "default" {
-  depends_on          = [helm_release.authentik]
+  depends_on          = [time_sleep.wait_5min_for_dns_and_certificate]
   domain              = var.authentik_endpoint_domain
   flow_authentication = authentik_flow.nextit-login-flow.uuid
   branding_title      = "NextIT"
