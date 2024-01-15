@@ -9,3 +9,7 @@ export async function onlyLoggedInUser() {
     redirect("/");
   }
 }
+
+export async function userIsLoggedIn() {
+  return (await getServerSession(authOptions)) != null;
+}

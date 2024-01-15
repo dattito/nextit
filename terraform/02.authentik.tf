@@ -26,7 +26,7 @@ resource "helm_release" "authentik" {
   repository = "https://charts.goauthentik.io"
   chart      = "authentik"
   namespace  = "default"
-  version    = "2023.10.5"
+  version    = "2023.10.6"
 
   values = [
     file("authentik-helm-values.yaml"),

@@ -55,11 +55,6 @@ variable "authentik_endpoint_protocol" {
   default = "https"
 }
 
-variable "web_postgres_password" {
-  type      = string
-  sensitive = true
-}
-
 variable "test_setup" {
   type    = bool
   default = true
@@ -73,6 +68,15 @@ variable "traefik_authentik_domain" {
   type = string
 }
 
+variable "traefik_web_domain" {
+  type = string
+}
+
 variable "platform" {
   default = "arm"
+}
+
+variable "nextauth_secret" {
+  sensitive = true
+  type      = string
 }

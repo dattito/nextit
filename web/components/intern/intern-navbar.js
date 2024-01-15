@@ -9,7 +9,7 @@ export default function InternNavbar() {
           <Image src="/Logo_wide.png" width={100} height={23} alt="logo" />
         </a>
         <div className="d-flex">
-          <LogoutButton />
+          <LogoutButton logoutUrl={process.env.AUTHENTIK_LOGOUT_URL} />
         </div>
       </div>
     </nav>
