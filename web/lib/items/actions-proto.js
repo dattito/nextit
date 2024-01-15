@@ -5,7 +5,7 @@ import { GetItemsResponse } from "@/proto/item_pb";
 /**
  * @returns {Promise<GetItemsResponse[]>}
  */
-export function getItems() {
+export function getItemsProto() {
   const client = newClient();
   return promisify(client.getItems)
     .bind(client)({})
@@ -15,7 +15,7 @@ export function getItems() {
 /**
  * @param {string} name
  */
-export function addItem(name) {
+export function addItemProto(name) {
   const client = newClient();
   return promisify(client.addItem).bind(client)({ name });
 }
@@ -23,7 +23,7 @@ export function addItem(name) {
 /**
  * @param {string} id
  */
-export function deleteItem(id) {
+export function deleteItemProto(id) {
   const client = newClient();
   return promisify(client.deleteItem).bind(client)({ id });
 }

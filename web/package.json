@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "npm run migrate && next start",
     "lint": "next lint",
-    "create-test-db": "docker run --rm -d --name nextit-web-postgres -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres:16-alpine && sleep 5 && npm run migrate",
+    "create-test-db": "docker run --rm -d --name nextit-web-postgres -p 5433:5432 -e POSTGRES_PASSWORD=postgres postgres:16-alpine && sleep 5 && npm run migrate",
     "remove-test-db": "docker stop nextit-web-postgres",
     "migrate": "prisma migrate deploy",
     "generate-proto": "protoc-gen-grpc --js_out=import_style=commonjs,binary:./ --grpc_out=grpc_js:./ proto/item.proto && protoc-gen-grpc-ts --ts_out=grpc_js:. proto/item.proto"
