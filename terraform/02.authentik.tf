@@ -167,6 +167,8 @@ data "authentik_stage" "default-authentication-mfa-validation" {
 }
 
 resource "authentik_stage_authenticator_validate" "mfa-validation" {
+  count = var.disable_2fa ? 0 : 1
+
   depends_on            = [time_sleep.wait_5min_for_dns_and_certificate]
   name                  = "mfa-validation"
   device_classes        = ["totp"]
@@ -175,6 +177,8 @@ resource "authentik_stage_authenticator_validate" "mfa-validation" {
 }
 
 resource "authentik_flow_stage_binding" "login-3" {
+  count = var.disable_2fa ? 0 : 1
+
   depends_on = [time_sleep.wait_5min_for_dns_and_certificate]
   target     = authentik_flow.nextit-login-flow.uuid
   stage      = authentik_stage_authenticator_validate.mfa-validation.id

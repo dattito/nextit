@@ -18,7 +18,7 @@ export default function InternContent() {
         >
           <h1
             className="text-white me-auto"
-            style={{ textShadow: "0px 0px 8px #000;" }}
+            style={{ textShadow: "0px 0px 8px #000" }}
           >
             Hallo Benjamin
           </h1>
