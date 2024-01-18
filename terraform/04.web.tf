@@ -87,7 +87,7 @@ resource "kubernetes_deployment" "web" {
       }
       spec {
         container {
-          image = "ghcr.io/dattito/nextit/web:0.3-${var.platform}"
+          image = "ghcr.io/dattito/nextit/web:0.4-${var.platform}"
           name  = "web"
 
           env_from {
