@@ -1,6 +1,28 @@
+"use client";
+import { useEffect, useState } from "react";
 import InternPost from "./intern-post";
+import { addItem, getItems } from "@/lib/items/actions-http";
 
-export default function InternContent() {
+export default function InternContent({ username, defaultItems }) {
+  /** @type {[import("@/lib/items/actions-proto").Item[], any]} */
+  const [items, setItems] = useState(defaultItems ?? []);
+
+  const [newText, setNewText] = useState("");
+
+  async function loadItems() {
+    await getItems().then(setItems);
+  }
+
+  async function addNewPost() {
+    if (!newText) return;
+
+    await addItem(newText);
+
+    setNewText(() => "");
+
+    await loadItems();
+  }
+
   return (
     <>
       <div
@@ -20,7 +42,7 @@ export default function InternContent() {
             className="text-white me-auto"
             style={{ textShadow: "0px 0px 8px #000" }}
           >
-            Hallo Benjamin
+            Hallo {username}
           </h1>
         </div>
       </div>
@@ -39,16 +61,15 @@ export default function InternContent() {
         </div>
 
         <div className="card mt-2 p-2">
-          <InternPost
-            date="05. Januar 2024, 15:03 Uhr"
-            author="Benjamin Jung"
-            content="Lorem ipsum dolor sit amet, consetetur sadipscing elitr, ..."
-          />
-          <InternPost
-            date="05. Januar 2024, 15:03 Uhr"
-            author="Benjamin Jung"
-            content="Lorem ipsum dolor sit amet, consetetur sadipscing elitr, ..."
-          />
+          {items
+            .map((item, index) => (
+              <InternPost
+                key={index}
+                author={item.username}
+                content={item.text}
+              />
+            ))
+            .reverse()}
         </div>
       </div>
 
@@ -74,24 +95,13 @@ export default function InternContent() {
             </div>
             <div className="modal-body">
               <div className="mb-3">
-                <label htmlFor="newPostDate" className="form-label">
-                  Datum und Uhrzeit
-                </label>
-                <input
-                  type="datetime-local"
-                  className="form-control"
-                  id="newPostDate"
-                  placeholder=""
-                />
-              </div>
-              <div className="mb-3">
-                <label htmlFor="newPostContent" className="form-label">
-                  Post
-                </label>
                 <textarea
                   type="datetime-local"
-                  className="form-control"
+                  className="form-control min-h-64"
                   id="newPostContent"
+                  placeholder="Eine Nachricht formulieren..."
+                  value={newText}
+                  onChange={(e) => setNewText(e.target.value)}
                 ></textarea>
               </div>
             </div>
@@ -103,7 +113,12 @@ export default function InternContent() {
               >
                 Abbrechen
               </button>
-              <button type="button" className="btn btn-sm btn-primary">
+              <button
+                type="button"
+                className="btn btn-sm btn-primary"
+                data-bs-dismiss="modal"
+                onMouseUp={addNewPost}
+              >
                 Posten
               </button>
             </div>

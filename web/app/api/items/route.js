@@ -42,13 +42,15 @@ export async function POST(request) {
 
   if (!body.name) {
     return Response.json(
-      { message: "'name' is missing in request body" },
+      { message: "'name' is missing in request body or empty" },
       { status: 400 },
     );
   }
 
   try {
-    const res = await addItemProto(body.name);
+    const res = await addItemProto(
+      `${session?.user?.name ?? "User"};${body.name}`,
+    );
 
     return Response.json({ id: res.id });
   } catch {
