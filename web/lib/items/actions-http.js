@@ -3,7 +3,7 @@
 import { GetItemsResponse } from "@/proto/item_pb";
 
 /**
- * @returns {Promise<GetItemsResponse[]>}
+ * @returns {Promise<import("./actions-proto").Item[]>}
  */
 export async function getItems() {
   const res = await fetch("/api/items");
@@ -12,7 +12,12 @@ export async function getItems() {
     return [];
   }
 
-  return await res.json();
+  /** @type {GetItemsResponse[]} */
+  const j = await res.json();
+
+  console.log(j);
+
+  return j;
 }
 
 /**

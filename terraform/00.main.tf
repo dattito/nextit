@@ -80,3 +80,7 @@ variable "nextauth_secret" {
   sensitive = true
   type      = string
 }
+
+variable "disable_2fa" {
+  default = false
+}
