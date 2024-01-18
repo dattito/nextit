@@ -61,15 +61,19 @@ export default function InternContent({ username, defaultItems }) {
         </div>
 
         <div className="card mt-2 p-2">
-          {items
-            .map((item, index) => (
-              <InternPost
-                key={index}
-                author={item.username}
-                content={item.text}
-              />
-            ))
-            .reverse()}
+          {items.length > 0 ? (
+            items
+              .map((item, index) => (
+                <InternPost
+                  key={index}
+                  author={item.username}
+                  content={item.text}
+                />
+              ))
+              .reverse()
+          ) : (
+            <p className="text-tertiary mt-3">Noch keine Posts erstellt</p>
+          )}
         </div>
       </div>
 
