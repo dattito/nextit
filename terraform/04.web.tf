@@ -125,10 +125,7 @@ resource "kubernetes_service" "web" {
     port {
       port        = 3000
       target_port = 3000
-      node_port   = var.test_setup ? 30052 : 0
     }
-
-    type = var.test_setup ? "NodePort" : "ClusterIP"
   }
 }
 
