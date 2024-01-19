@@ -17,12 +17,10 @@ export default function PublicContent() {
         {/* Bild mit Text auf der linken Seite */}
         <div className="row mt-4">
           <div className="col-lg-6">
-            <Image
-              src="/slider2.jpg"
-              height={280}
-              width={500}
+            <img
+              src="/img1.jpg"
               alt="Erfolgreich Vernetzen"
-              fluid="true"
+              className="w-100 siteImg"
             />
           </div>
           <div className="col-lg-6">
@@ -40,12 +38,10 @@ export default function PublicContent() {
         {/* Bild mit Text auf der rechten Seite */}
         <div className="row mt-5">
           <div className="col-lg-6">
-            <Image
-              src="/slider3.jpg"
-              height={280}
-              width={500}
+          <img
+              src="/img2.jpg"
               alt="Erfolgreich Designen"
-              fluid="true"
+              className="w-100 siteImg"
             />
           </div>
           <div className="col-lg-6">
