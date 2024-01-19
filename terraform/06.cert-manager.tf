@@ -1,9 +1,10 @@
 resource "helm_release" "cert_manager" {
-  count      = var.test_setup ? 0 : 1
+  depends_on = [kubernetes_namespace.nextit]
+  count      = (!var.test_setup && var.k8s_install_cert_manager) ? 1 : 0
   name       = "cert-manager"
   repository = "https://charts.jetstack.io"
   chart      = "cert-manager"
-  namespace  = "default"
+  namespace  = var.k8s_namespace
   version    = "v1.13.3"
 
   set {
@@ -18,15 +19,15 @@ resource "helm_release" "cert_manager" {
 }
 
 resource "kubectl_manifest" "cluster_issuer" {
-  depends_on = [helm_release.cert_manager]
-  count      = var.test_setup ? 0 : 1
+  depends_on = [helm_release.cert_manager, kubernetes_namespace.nextit]
+  count      = (!var.test_setup && var.k8s_install_cert_manager_crs) ? 1 : 0
 
   yaml_body = <<YAML
 apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
+kind: Issuer
 metadata:
   name: cloudflare-issuer
-  namespace: default
+  namespace: ${var.k8s_namespace}
 spec:
   acme:
     server: "https://acme-v02.api.letsencrypt.org/directory"
@@ -43,22 +44,22 @@ YAML
 }
 
 resource "kubectl_manifest" "tls-certificate" {
-  depends_on = [kubectl_manifest.cluster_issuer]
-  count      = var.test_setup ? 0 : 1
+  depends_on = [kubectl_manifest.cluster_issuer, kubernetes_namespace.nextit]
+  count      = (!var.test_setup && var.k8s_install_cert_manager_crs) ? 1 : 0
 
   yaml_body = <<YAML
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: nextitcloud-certificate
-  namespace: default
+  namespace: ${var.k8s_namespace}
 spec:
   secretName: nextitcloud-tls
   dnsNames:
     - "*.nextit.cloud"
     - nextit.cloud
   issuerRef:
-    kind: ClusterIssuer
+    kind: Issuer
     name: cloudflare-issuer
 YAML
 }
