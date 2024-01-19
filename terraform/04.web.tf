@@ -4,8 +4,10 @@ resource "random_password" "web_postgres" {
 }
 
 resource "kubernetes_secret" "web_postgres" {
+  depends_on = [kubernetes_namespace.nextit]
   metadata {
-    name = "web-postgres"
+    name      = "web-postgres"
+    namespace = var.k8s_namespace
   }
 
   data = {
@@ -16,10 +18,11 @@ resource "kubernetes_secret" "web_postgres" {
 }
 
 resource "helm_release" "web_postgres" {
+  depends_on = [kubernetes_namespace.nextit]
   name       = "web-postgres"
   repository = "https://charts.bitnami.com/bitnami"
   chart      = "postgresql"
-  namespace  = "default"
+  namespace  = var.k8s_namespace
   version    = "13.2.24"
 
   set {
@@ -49,10 +52,12 @@ resource "helm_release" "web_postgres" {
 }
 
 resource "kubernetes_secret" "web" {
-  count = var.test_setup ? 0 : 1
+  depends_on = [kubernetes_namespace.nextit]
+  count      = var.test_setup ? 0 : 1
 
   metadata {
-    name = "web"
+    name      = "web"
+    namespace = var.k8s_namespace
   }
 
   data = {
@@ -62,14 +67,16 @@ resource "kubernetes_secret" "web" {
     "AUTHENTIK_LOGOUT_URL" : "${var.authentik_endpoint_protocol}://${var.authentik_endpoint_domain}/flows/-/default/invalidation/",
     "AUTHENTIK_CLIENTID" : var.authentik_nextit_clientid,
     "AUTHENTIK_CLIENTSECRET" : var.authentik_nextit_clientsecret,
+    "ITEM_SERVICE_HOST" : "item-microservice:50051",
   }
 }
 
 resource "kubernetes_deployment" "web" {
   count      = var.test_setup ? 0 : 1
-  depends_on = [helm_release.web_postgres]
+  depends_on = [helm_release.web_postgres, kubernetes_namespace.nextit]
   metadata {
-    name = "web"
+    name      = "web"
+    namespace = var.k8s_namespace
   }
 
   spec {
@@ -108,7 +115,8 @@ resource "kubernetes_deployment" "web" {
 resource "kubernetes_service" "web" {
   count = var.test_setup ? 0 : 1
   metadata {
-    name = "web"
+    name      = "web"
+    namespace = var.k8s_namespace
   }
   spec {
     selector = {
@@ -125,10 +133,12 @@ resource "kubernetes_service" "web" {
 }
 
 resource "kubernetes_ingress_v1" "web" {
-  count = var.test_setup ? 0 : 1
+  depends_on = [kubernetes_namespace.nextit]
+  count      = var.test_setup ? 0 : 1
 
   metadata {
-    name = "web"
+    name      = "web"
+    namespace = var.k8s_namespace
   }
 
   spec {

@@ -9,8 +9,10 @@ provider "authentik" {
 }
 
 resource "kubernetes_config_map" "authentik_assets" {
+  depends_on = [kubernetes_namespace.nextit]
   metadata {
-    name = "authentik-assets"
+    name      = "authentik-assets"
+    namespace = var.k8s_namespace
   }
 
   binary_data = {
@@ -21,11 +23,11 @@ resource "kubernetes_config_map" "authentik_assets" {
 }
 
 resource "helm_release" "authentik" {
-  depends_on = [kubernetes_config_map.authentik_assets]
+  depends_on = [kubernetes_config_map.authentik_assets, kubernetes_namespace.nextit]
   name       = "authentik"
   repository = "https://charts.goauthentik.io"
   chart      = "authentik"
-  namespace  = "default"
+  namespace  = var.k8s_namespace
   version    = "2023.10.6"
 
   values = [
@@ -91,7 +93,7 @@ resource "helm_release" "authentik" {
 resource "time_sleep" "wait_5min_for_dns_and_certificate" {
   depends_on = [helm_release.authentik]
 
-  create_duration = var.test_setup ? "0s" : "300s"
+  create_duration = var.test_setup ? "0s" : "180s"
 }
 
 # ----------------------------------------
@@ -181,7 +183,7 @@ resource "authentik_flow_stage_binding" "login-3" {
 
   depends_on = [time_sleep.wait_5min_for_dns_and_certificate]
   target     = authentik_flow.nextit-login-flow.uuid
-  stage      = authentik_stage_authenticator_validate.mfa-validation.id
+  stage      = authentik_stage_authenticator_validate.mfa-validation.0.id
   order      = 30
 }
 
@@ -329,25 +331,29 @@ resource "authentik_flow_stage_binding" "signup-4" {
 }
 
 data "authentik_flow" "totp-setup" {
+  count      = var.disable_2fa ? 0 : 1
   depends_on = [time_sleep.wait_5min_for_dns_and_certificate]
   slug       = "default-authenticator-totp-setup"
 }
 
 resource "authentik_stage_authenticator_totp" "signup-5" {
+  count          = var.disable_2fa ? 0 : 1
   depends_on     = [time_sleep.wait_5min_for_dns_and_certificate]
   name           = "nextit_totp"
   friendly_name  = "NextIT"
-  configure_flow = data.authentik_flow.totp-setup.id
+  configure_flow = data.authentik_flow.totp-setup.0.id
 }
 
 resource "authentik_flow_stage_binding" "signup-5" {
+  count      = var.disable_2fa ? 0 : 1
   depends_on = [time_sleep.wait_5min_for_dns_and_certificate]
   target     = authentik_flow.nextit-enrollment-flow.uuid
-  stage      = authentik_stage_authenticator_totp.signup-5.id
+  stage      = authentik_stage_authenticator_totp.signup-5.0.id
   order      = 50
 }
 
 resource "authentik_flow_stage_binding" "signup-6" {
+  count      = var.disable_2fa ? 0 : 1
   depends_on = [time_sleep.wait_5min_for_dns_and_certificate]
   target     = authentik_flow.nextit-enrollment-flow.uuid
   stage      = authentik_stage_user_write.signup-4.id

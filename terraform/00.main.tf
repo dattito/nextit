@@ -72,6 +72,15 @@ variable "traefik_web_domain" {
   type = string
 }
 
+variable "cloudflare_api_token" {
+  type      = string
+  sensitive = true
+}
+
+variable "cloudflare_domain_filter" {
+  type = string
+}
+
 variable "platform" {
   default = "arm"
 }
@@ -83,4 +92,32 @@ variable "nextauth_secret" {
 
 variable "disable_2fa" {
   default = false
+}
+
+variable "k8s_namespace" {
+  default = "default"
+}
+
+variable "k8s_create_namespace" {
+  default = false
+}
+
+// - but apply CRs!
+// - unused if test_setup == true
+variable "k8s_install_cert_manager" {
+  default = true
+}
+
+// - unused if test_setup == true
+variable "k8s_install_cert_manager_crs" {
+  default = true
+}
+
+// - unused if test_setup == true
+variable "k8s_install_external_dns" {
+  default = true
+}
+
+variable "k8s_context_name" {
+  default = "nextit"
 }

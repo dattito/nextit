@@ -1,23 +1,17 @@
-variable "cloudflare_api_token" {
-  type      = string
-  sensitive = true
-}
-
-variable "cloudflare_domain_filter" {
-  type = string
-}
-
 resource "kubernetes_service_account" "external_dns" {
-  count = var.test_setup ? 0 : 1
+  depends_on = [kubernetes_namespace.nextit]
+  count      = (!var.test_setup && var.k8s_install_external_dns) ? 1 : 0
   metadata {
-    name = "external-dns"
+    name      = "external-dns-nextit"
+    namespace = var.k8s_namespace
   }
 }
 
 resource "kubernetes_cluster_role" "external_dns" {
-  count = var.test_setup ? 0 : 1
+  depends_on = [kubernetes_namespace.nextit]
+  count      = (!var.test_setup && var.k8s_install_external_dns) ? 1 : 0
   metadata {
-    name = "external-dns"
+    name = "external-dns-nextit"
   }
 
   rule {
@@ -40,26 +34,29 @@ resource "kubernetes_cluster_role" "external_dns" {
 }
 
 resource "kubernetes_cluster_role_binding" "external_dns" {
-  count = var.test_setup ? 0 : 1
+  depends_on = [kubernetes_namespace.nextit, kubernetes_cluster_role.external_dns, kubernetes_service_account.external_dns]
+  count      = (!var.test_setup && var.k8s_install_external_dns) ? 1 : 0
   metadata {
-    name = "external-dns"
+    name = "external-dns-nextit"
   }
   role_ref {
     api_group = "rbac.authorization.k8s.io"
     kind      = "ClusterRole"
-    name      = "external-dns"
+    name      = "external-dns-nextit"
   }
   subject {
     kind      = "ServiceAccount"
-    name      = "external-dns"
-    namespace = "default"
+    name      = "external-dns-nextit"
+    namespace = var.k8s_namespace
   }
 }
 
 resource "kubernetes_secret" "cloudflare" {
-  count = var.test_setup ? 0 : 1
+  depends_on = [kubernetes_namespace.nextit]
+  count      = (!var.test_setup && (var.k8s_install_external_dns || var.k8s_install_cert_manager)) ? 1 : 0
   metadata {
-    name = "cloudflare"
+    name      = "cloudflare"
+    namespace = var.k8s_namespace
   }
   data = {
     api-key = var.cloudflare_api_token
@@ -68,11 +65,11 @@ resource "kubernetes_secret" "cloudflare" {
 }
 
 resource "kubernetes_deployment" "external_dns" {
-  # TODO: REUSE THIS LINE
-  count = var.test_setup ? 0 : 1
-  # count = 0
+  depends_on = [kubernetes_namespace.nextit, kubernetes_secret.cloudflare, kubernetes_cluster_role_binding.external_dns]
+  count      = (!var.test_setup && var.k8s_install_external_dns) ? 1 : 0
   metadata {
-    name = "external-dns"
+    name      = "external-dns"
+    namespace = var.k8s_namespace
   }
   spec {
     selector {
@@ -87,7 +84,7 @@ resource "kubernetes_deployment" "external_dns" {
         }
       }
       spec {
-        service_account_name = "external-dns"
+        service_account_name = "external-dns-nextit"
         container {
           image = "registry.k8s.io/external-dns/external-dns:v0.14.0"
           name  = "external-dns"
@@ -97,6 +94,7 @@ resource "kubernetes_deployment" "external_dns" {
             "--provider=cloudflare",
             # "--cloudflare-proxied",
             "--cloudflare-dns-records-per-page=5000",
+            "--namespace=${var.k8s_namespace}"
           ]
           env {
             name = "CF_API_TOKEN"

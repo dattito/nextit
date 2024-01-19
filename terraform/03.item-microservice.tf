@@ -4,8 +4,10 @@ resource "random_password" "item_microservice_postgres" {
 }
 
 resource "kubernetes_secret" "item_microservice_postgres" {
+  depends_on = [kubernetes_namespace.nextit]
   metadata {
-    name = "item-microservice-postgres"
+    name      = "item-microservice-postgres"
+    namespace = var.k8s_namespace
   }
 
   data = {
@@ -16,10 +18,11 @@ resource "kubernetes_secret" "item_microservice_postgres" {
 }
 
 resource "helm_release" "item_microservice_postgres" {
+  depends_on = [kubernetes_namespace.nextit]
   name       = "item-microservice-postgres"
   repository = "https://charts.bitnami.com/bitnami"
   chart      = "postgresql"
-  namespace  = "default"
+  namespace  = var.k8s_namespace
   version    = "13.2.24"
 
   set {
@@ -39,9 +42,10 @@ resource "helm_release" "item_microservice_postgres" {
 }
 
 resource "kubernetes_deployment" "item_microservice" {
-  depends_on = [helm_release.item_microservice_postgres]
+  depends_on = [helm_release.item_microservice_postgres, kubernetes_namespace.nextit]
   metadata {
-    name = "item-microservice"
+    name      = "item-microservice"
+    namespace = var.k8s_namespace
   }
 
   spec {
@@ -78,7 +82,8 @@ resource "kubernetes_deployment" "item_microservice" {
 
 resource "kubernetes_service" "item_microservice" {
   metadata {
-    name = "item-microservice"
+    name      = "item-microservice"
+    namespace = var.k8s_namespace
   }
   spec {
     selector = {

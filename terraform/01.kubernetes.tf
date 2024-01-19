@@ -33,7 +33,7 @@ provider "kubectl" {
   cluster_ca_certificate = var.test_setup ? kind_cluster.docker[0].cluster_ca_certificate : ""
 
   config_path    = var.test_setup ? "" : "~/.kube/config"
-  config_context = var.test_setup ? "" : "nextit"
+  config_context = var.test_setup ? "" : var.k8s_context_name
 }
 
 provider "kubernetes" {
@@ -43,7 +43,7 @@ provider "kubernetes" {
   cluster_ca_certificate = var.test_setup ? kind_cluster.docker[0].cluster_ca_certificate : ""
 
   config_path    = var.test_setup ? "" : "~/.kube/config"
-  config_context = var.test_setup ? "" : "nextit"
+  config_context = var.test_setup ? "" : var.k8s_context_name
 }
 
 provider "helm" {
@@ -54,6 +54,13 @@ provider "helm" {
     cluster_ca_certificate = var.test_setup ? kind_cluster.docker[0].cluster_ca_certificate : ""
 
     config_path    = var.test_setup ? "" : "~/.kube/config"
-    config_context = var.test_setup ? "" : "nextit"
+    config_context = var.test_setup ? "" : var.k8s_context_name
+  }
+}
+
+resource "kubernetes_namespace" "nextit" {
+  count = var.k8s_create_namespace ? 1 : 0
+  metadata {
+    name = var.k8s_namespace
   }
 }
