@@ -402,3 +402,16 @@ resource "authentik_tenant" "default" {
   branding_logo       = "/media/assets/logo.png"
   branding_favicon    = "/media/assets/favicon.ico"
 }
+
+data "authentik_group" "admins" {
+  depends_on = [time_sleep.wait_5min_for_dns_and_certificate]
+  name       = "authentik Admins"
+}
+
+resource "authentik_user" "name" {
+  depends_on = [time_sleep.wait_5min_for_dns_and_certificate]
+  username   = var.authentik_username
+  name       = var.authentik_name
+  password   = var.authentik_password
+  groups     = [data.authentik_group.admins.id]
+}

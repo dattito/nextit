@@ -55,6 +55,19 @@ variable "authentik_endpoint_protocol" {
   default = "https"
 }
 
+variable "authentik_username" {
+  default = "admin"
+}
+
+variable "authentik_name" {
+  default = "Admin"
+}
+
+variable "authentik_password" {
+  default   = "1234"
+  sensitive = true
+}
+
 variable "test_setup" {
   type    = bool
   default = true
